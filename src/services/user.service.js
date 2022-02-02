@@ -1,6 +1,7 @@
 const User = require("../models/users");
 const uuid = require("uuid");
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 exports.createUser = async (req, res) => {
   // const email = req.body.email;
 
@@ -34,4 +35,32 @@ exports.listUsers = async (req, res) => {
   if (!user) {
     res.status(400).json({ message: "Error Occured" });
   }
+};
+exports.login = async (req, res) => {
+  const { email, password } = req.body;
+
+  const userWithEmail = await User.findOne({ where: { email } }).catch(
+    (err) => {
+      console.log("Error: ", err);
+    }
+  );
+
+  if (!userWithEmail)
+    return res
+      .status(400)
+      .json({ message: "Email or password does not match!" });
+
+  const data = await bcrypt.compare(password, userWithEmail.password);
+
+  if (!data)
+    return res
+      .status(400)
+      .json({ message: "Email or password does not match!" });
+
+  const jwtToken = jwt.sign(
+    { id: userWithEmail.id, email: userWithEmail.email },
+    process.env.JWT_SECRET
+  );
+
+  res.json({ message: "Welcome....!", token: jwtToken });
 };
